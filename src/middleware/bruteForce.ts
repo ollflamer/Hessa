@@ -65,7 +65,7 @@ class BruteForceProtection {
         record.blocked = true;
         record.blockUntil = new Date(now.getTime() + this.blockDurationMs);
         
-        logger.warn('IP blocked due to brute force:', {
+        logger.warn('Айпи заблокирован из-за brute force:', {
           ip: req.ip,
           email: req.body?.email,
           attempts: record.count,
@@ -126,7 +126,7 @@ export const bruteForceMiddleware = (req: Request, res: Response, next: NextFunc
     const remainingTime = bruteForceProtection.getRemainingTime(req);
     const remainingMinutes = Math.ceil(remainingTime / (60 * 1000));
 
-    logger.warn('Blocked request due to brute force:', {
+    logger.warn('Запрос заблокирован из-за brute force:', {
       ip: req.ip,
       email: req.body?.email,
       remainingMinutes

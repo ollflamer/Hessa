@@ -85,7 +85,7 @@ const options: swaggerJsdoc.Options = {
         },
         RegisterRequest: {
           type: 'object',
-          required: ['email', 'name', 'password'],
+          required: ['email', 'name', 'password', 'agreeToTerms'],
           properties: {
             email: {
               type: 'string',
@@ -98,8 +98,12 @@ const options: swaggerJsdoc.Options = {
             },
             password: {
               type: 'string',
-              minLength: 6,
-              description: 'Пароль (минимум 6 символов)'
+              minLength: 8,
+              description: 'Пароль (минимум 8 символов, должен содержать заглавную букву, строчную букву, цифру и спецсимвол)'
+            },
+            agreeToTerms: {
+              type: 'boolean',
+              description: 'Согласие с условиями использования и офертой'
             }
           }
         },

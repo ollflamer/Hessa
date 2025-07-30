@@ -39,10 +39,15 @@ export class UserController extends BaseController {
    */
   public register = (req: Request, res: Response) => {
     this.executeAsync(req, res, async () => {
-      const { email, name, password } = req.body;
+      const { email, name, password, agreeToTerms } = req.body;
       
       if (!email || !name || !password) {
         return this.handleError(res, 'Email, имя и пароль обязательны', 400);
+      }
+
+      // Проверяем согласие с офертой
+      if (!agreeToTerms) {
+        return this.handleError(res, 'Необходимо согласиться с офертой', 400);
       }
 
       const user = await userService.createUser({ email, name, password });

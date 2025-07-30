@@ -97,7 +97,7 @@ export const sanitizeMiddleware = (req: Request, res: Response, next: NextFuncti
   const sanitizeObject = (obj: any, path = ''): any => {
     if (obj && typeof obj === 'object') {
       for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
           const fullPath = path ? `${path}.${key}` : key;
           
           if (key.includes('$') || key.includes('.') || key.startsWith('_')) {
@@ -136,7 +136,7 @@ export const sanitizeMiddleware = (req: Request, res: Response, next: NextFuncti
   
   if (req.query && typeof req.query === 'object') {
     for (const key in req.query) {
-      if (req.query.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(req.query, key)) {
         if (key.includes('$') || key.includes('.') || key.startsWith('_')) {
           logger.warn(`Potential injection attempt in query from IP: ${req.ip}, key: ${key}`);
           delete req.query[key];

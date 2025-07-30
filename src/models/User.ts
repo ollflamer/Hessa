@@ -3,6 +3,7 @@ export class User {
     public id: string,
     public email: string,
     public name: string,
+    public role: 'user' | 'admin' | 'moderator' = 'user',
     public createdAt: Date = new Date(),
     public updatedAt: Date = new Date()
   ) {}
@@ -12,6 +13,7 @@ export class User {
       obj.id,
       obj.email,
       obj.name,
+      obj.role || 'user',
       obj.createdAt ? new Date(obj.createdAt) : new Date(),
       obj.updatedAt ? new Date(obj.updatedAt) : new Date()
     );
@@ -22,6 +24,7 @@ export class User {
       id: this.id,
       email: this.email,
       name: this.name,
+      role: this.role,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
     };

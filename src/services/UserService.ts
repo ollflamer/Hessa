@@ -29,9 +29,9 @@ export class UserService extends BaseService {
       const passwordHash = await bcrypt.hash(password, 12);
       
       const result = await databaseService.query<any>(
-        `INSERT INTO users (email, name, password_hash) 
-         VALUES ($1, $2, $3) 
-         RETURNING id, email, name, created_at, updated_at`,
+        `INSERT INTO users (email, name, password_hash, role) 
+         VALUES ($1, $2, $3, 'user') 
+         RETURNING id, email, name, role, created_at, updated_at`,
         [email, name, passwordHash]
       );
 
@@ -41,7 +41,7 @@ export class UserService extends BaseService {
 
   async findByEmail(email: string): Promise<User | null> {
     const result = await databaseService.query<any>(
-      'SELECT id, email, name, created_at, updated_at FROM users WHERE email = $1',
+      'SELECT id, email, name, role, created_at, updated_at FROM users WHERE email = $1',
       [email]
     );
 
@@ -50,7 +50,7 @@ export class UserService extends BaseService {
 
   async findById(id: string): Promise<User | null> {
     const result = await databaseService.query<any>(
-      'SELECT id, email, name, created_at, updated_at FROM users WHERE id = $1',
+      'SELECT id, email, name, role, created_at, updated_at FROM users WHERE id = $1',
       [id]
     );
 
@@ -62,7 +62,7 @@ export class UserService extends BaseService {
       const { email, password } = loginData;
       
       const result = await databaseService.query<any>(
-        'SELECT id, email, name, password_hash, created_at, updated_at FROM users WHERE email = $1',
+        'SELECT id, email, name, role, password_hash, created_at, updated_at FROM users WHERE email = $1',
         [email]
       );
 
@@ -90,7 +90,7 @@ export class UserService extends BaseService {
 
   async getAllUsers(): Promise<User[]> {
     const result = await databaseService.query<any>(
-      'SELECT id, email, name, created_at, updated_at FROM users ORDER BY created_at DESC'
+      'SELECT id, email, name, role, created_at, updated_at FROM users ORDER BY created_at DESC'
     );
 
     return result.map(userData => User.fromObject(userData));

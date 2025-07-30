@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, MaxLength, Matches, IsNotEmpty } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength, Matches, IsNotEmpty, IsBoolean } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class RegisterUserDto {
@@ -23,6 +23,15 @@ export class RegisterUserDto {
   })
   @IsNotEmpty({ message: 'Пароль обязателен' })
   password!: string;
+
+  @IsBoolean({ message: 'Поле согласия с офертой должно быть булевым значением' })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.toLowerCase() === 'true';
+    }
+    return Boolean(value);
+  })
+  agreeToTerms!: boolean;
 }
 
 export class LoginUserDto {
