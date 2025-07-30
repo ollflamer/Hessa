@@ -23,26 +23,20 @@ import {
 
 const app = express();
 
-// Основные миддлвары
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(corsMiddleware);
 
-// Базовые middleware безопасности для всех маршрутов
 app.use(compressionMiddleware);
 
-// Условные middleware безопасности (исключаем Swagger)
 app.use((req: Request, res: Response, next: NextFunction) => {
-  // Пропускаем строгую безопасность для Swagger
   if (req.path.startsWith('/api-docs')) {
     return next();
   }
   
-  // Применяем защиту для API endpoints
   helmetMiddleware(req, res, () => {
     generalRateLimit(req, res, () => {
       securityLogger(req, res, () => {
-        // Применяем sanitization перед другими middleware
         sanitizeMiddleware(req, res, () => {
           xssMiddleware(req, res, () => {
             hppMiddleware(req, res, next);
@@ -57,9 +51,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use('/api', routes);
 
-// Swagger UI с отключенной безопасностью
 app.use('/api-docs', (req: Request, res: Response, next: NextFunction) => {
-  // Временно отключаем CSP для Swagger
   res.removeHeader('Content-Security-Policy');
   next();
 }, swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -88,6 +80,37 @@ app.get('/', (req, res) => {
 
 app.use(errorHandler);
 
+// Экспорт для тестов
+export { app };
+
+process.on('uncaughtException', (error) => {
+  logger.error('❌ Неперехваченное исключение:', error);
+  if (appConfig.nodeEnv === 'production') {
+    process.exit(1);
+  }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('❌ Неперехваченное отклонение промиса:', { reason, promise });
+  if (appConfig.nodeEnv === 'production') {
+    process.exit(1);
+  }
+});
+
+process.on('SIGTERM', () => {
+  logger.info('🔄 Получен сигнал SIGTERM, завершение работы...');
+  databaseService.close().then(() => {
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  logger.info('🔄 Получен сигнал SIGINT, завершение работы...');
+  databaseService.close().then(() => {
+    process.exit(0);
+  });
+});
+
 const startServer = async () => {
   try {
     logger.info('🔄 Инициализация сервера...');
@@ -106,16 +129,30 @@ const startServer = async () => {
     
     await migrationService.runMigrations();
     
-    app.listen(appConfig.port, () => {
+    const server = app.listen(appConfig.port, () => {
       logger.info(`🚀 Сервер запущен на порту ${appConfig.port}`);
       logger.info(`📍 Статус: ${appConfig.nodeEnv}`);
       logger.info(`🌐 Пин понг: http://localhost:${appConfig.port}/api/health`);
       logger.info(`👥 API пользователей: http://localhost:${appConfig.port}/api/users`);
       logger.info(`📝 Документация Swagger: http://localhost:${appConfig.port}/api-docs`);
     });
+
+    server.on('error', (error: any) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.error(`❌ Порт ${appConfig.port} уже используется`);
+      } else {
+        logger.error('❌ Ошибка сервера:', error);
+      }
+      if (appConfig.nodeEnv === 'production') {
+        process.exit(1);
+      }
+    });
+
   } catch (error) {
     logger.error('❌ Ошибка запуска сервера:', error);
-    process.exit(1);
+    if (appConfig.nodeEnv === 'production') {
+      process.exit(1);
+    }
   }
 };
 

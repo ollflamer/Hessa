@@ -3,8 +3,8 @@ import { sendSuccess, sendError } from '../utils/response';
 import { logger } from '../utils/logger';
 
 export abstract class BaseController {
-  protected handleSuccess<T>(res: Response, data: T, message?: string) {
-    sendSuccess(res, data, message);
+  protected handleSuccess<T>(res: Response, data: T, message?: string, statusCode = 200) {
+    sendSuccess(res, data, message, statusCode);
   }
 
   protected handleError(res: Response, error: string, statusCode = 400) {
