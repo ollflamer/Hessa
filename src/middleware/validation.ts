@@ -1,8 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
+import { validationResult } from 'express-validator';
 import { validate, ValidationError } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 import { sendError } from '../utils/response';
 import { logger } from '../utils/logger';
+
+// Middleware для express-validator
+export const validationMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorMessages = errors.array().map(error => error.msg).join(', ');
+    logger.warn('Validation failed:', {
+      ip: req.ip,
+      url: req.url,
+      errors: errorMessages,
+      body: req.body
+    });
+    return sendError(res, `Ошибка валидации: ${errorMessages}`, 400);
+  }
+  next();
+};
 
 export function validateDto<T extends object>(dtoClass: new () => T) {
   return async (req: Request, res: Response, next: NextFunction) => {

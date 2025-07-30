@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { BaseController } from './BaseController';
 import { SurveyService } from '../services/SurveyService';
+import { EnhancedRecommendationService } from '../services/EnhancedRecommendationService';
+import { DatabaseService } from '../services/DatabaseService';
 import { SurveyDto } from '../validators/SurveyValidators';
 import { logger } from '../utils/logger';
 import { RequestWithUser } from '../types';
@@ -104,10 +106,12 @@ import { RequestWithUser } from '../types';
 
 export class SurveyController extends BaseController {
   private surveyService: SurveyService;
+  private enhancedRecommendationService: EnhancedRecommendationService;
 
-  constructor() {
+  constructor(dbService: DatabaseService) {
     super();
     this.surveyService = new SurveyService();
+    this.enhancedRecommendationService = new EnhancedRecommendationService(dbService);
   }
 
   /**
@@ -261,6 +265,71 @@ export class SurveyController extends BaseController {
     } catch (error) {
       logger.error('[SurveyController] Ошибка получения рекомендаций:', error);
       this.handleError(res, 'Ошибка получения рекомендаций');
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/survey/smart-recommendations:
+   *   get:
+   *     summary: Получить улучшенные персональные рекомендации
+   *     tags: [Survey]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Улучшенные персональные рекомендации
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     recommendations:
+   *                       type: array
+   *                       items:
+   *                         type: object
+   *                     totalScore:
+   *                       type: number
+   *                     excludedProducts:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                     analysisReport:
+   *                       type: string
+   *       401:
+   *         description: Не авторизован
+   *       404:
+   *         description: Опрос не пройден
+   */
+  async getSmartRecommendations(req: RequestWithUser, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return this.handleError(res, 'Пользователь не найден', 401);
+      }
+
+      const survey = await this.surveyService.getUserSurvey(userId);
+      if (!survey) {
+        return this.handleError(res, 'Сначала пройдите опрос для получения рекомендаций', 404);
+      }
+
+      const recommendations = await this.enhancedRecommendationService.getPersonalizedRecommendations(
+        parseInt(userId),
+        survey as any,
+        8
+      );
+
+      logger.info(`[SurveyController] Получены улучшенные рекомендации для пользователя ${userId}: ${recommendations.recommendations.length} товаров`);
+      
+      this.handleSuccess(res, recommendations, 'Улучшенные рекомендации получены');
+    } catch (error) {
+      logger.error('[SurveyController] Ошибка получения улучшенных рекомендаций:', error);
+      this.handleError(res, 'Ошибка получения улучшенных рекомендаций');
     }
   }
 

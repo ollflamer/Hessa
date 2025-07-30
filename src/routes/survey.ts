@@ -4,9 +4,11 @@ import { authMiddleware } from '../middleware/auth';
 import { validateDto } from '../middleware/validation';
 import { SurveyDto } from '../validators/SurveyValidators';
 import { generalRateLimit } from '../middleware/security';
+import { DatabaseService } from '../services/DatabaseService';
 
 const router = Router();
-const surveyController = new SurveyController();
+const dbService = new DatabaseService();
+const surveyController = new SurveyController(dbService);
 
 /**
  * @swagger
@@ -37,6 +39,12 @@ router.get('/recommendations',
   generalRateLimit,
   authMiddleware,
   (req, res) => surveyController.getRecommendations(req as any, res)
+);
+
+router.get('/smart-recommendations', 
+  generalRateLimit,
+  authMiddleware,
+  (req, res) => surveyController.getSmartRecommendations(req as any, res)
 );
 
 export default router;

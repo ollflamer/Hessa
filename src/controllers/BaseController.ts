@@ -7,9 +7,17 @@ export abstract class BaseController {
     sendSuccess(res, data, message, statusCode);
   }
 
-  protected handleError(res: Response, error: string, statusCode = 400) {
-    logger.error(error);
-    sendError(res, error, statusCode);
+  protected handleError(res: Response, error: string | Error | unknown, statusCode = 400) {
+    let errorMessage: string;
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else {
+      errorMessage = 'Неизвестная ошибка';
+    }
+    logger.error(errorMessage);
+    sendError(res, errorMessage, statusCode);
   }
 
   protected async executeAsync(req: Request, res: Response, operation: () => Promise<any>) {
