@@ -17,14 +17,12 @@ export class RecommendationService extends BaseService {
 
   async recommendForUser(userProfile: UserSurvey): Promise<ProductRecommendation[]> {
     return this.executeWithLogging('создание рекомендаций для пользователя', async () => {
-      // 1. Находим все подходящие правила
       const matchingRules = await this.findMatchingRules(userProfile);
       
       if (matchingRules.length === 0) {
         return [];
       }
 
-      // 2. Собираем товары из всех правил
       const productRecommendations = new Map<string, ProductRecommendation>();
 
       for (const rule of matchingRules) {
@@ -34,11 +32,9 @@ export class RecommendationService extends BaseService {
           const existingRec = productRecommendations.get(product.id);
           
           if (existingRec) {
-            // Увеличиваем приоритет если товар уже есть
             existingRec.priority += rule.priority;
             existingRec.matchedRules.push(rule.id);
           } else {
-            // Создаем новую рекомендацию
             productRecommendations.set(product.id, {
               product,
               priority: rule.priority,
@@ -48,12 +44,8 @@ export class RecommendationService extends BaseService {
           }
         }
       }
-
-      // 3. Фильтруем уже принимаемые витамины
       const filteredRecommendations = Array.from(productRecommendations.values())
         .filter(rec => !this.isAlreadyTaking(rec.product, userProfile.vitaminsCurrent));
-
-      // 4. Сортируем по приоритету и возвращаем топ-8
       return filteredRecommendations
         .sort((a, b) => b.priority - a.priority)
         .slice(0, 8);
@@ -125,8 +117,6 @@ export class RecommendationService extends BaseService {
 
   private ruleMatches(rule: VitaminRule, profile: UserSurvey): boolean {
     const conditions = rule.condition;
-
-    // Проверяем каждое условие
     if (conditions.age_group && conditions.age_group.length > 0) {
       if (!conditions.age_group.includes(profile.ageGroup)) {
         return false;
@@ -188,7 +178,6 @@ export class RecommendationService extends BaseService {
   }
 
   private isAlreadyTaking(product: Product, currentVitamins: string[]): boolean {
-    // Проверяем по названию товара и его преимуществам
     const productName = product.name.toLowerCase();
     const productBenefits = product.benefits.map(b => b.toLowerCase());
 

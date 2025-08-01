@@ -15,26 +15,23 @@ export interface Product {
   price: number;
   size?: string;
   quantity: number;
-  categoryId?: string; // Основная категория (для обратной совместимости)
+  categoryId?: string; 
   
   // Ограничения и противопоказания
   restrictions: ProductRestriction[];
   
-  // Атрибуты для рекомендаций (новые)
-  targetComplaints: ProductComplaint[]; // Какие проблемы решает
-  targetGoals: ProductGoal[]; // Какие цели помогает достичь
-  vitaminType: ProductVitaminType[]; // Тип витамина/добавки
+  targetComplaints: ProductComplaint[]; 
+  targetGoals: ProductGoal[];
+  vitaminType: ProductVitaminType[]; 
   
-  // Остальные поля
-  benefits: string[]; // Описание пользы (текстовое)
+  benefits: string[];
   dosage?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
   
-  // Связанные данные (для JOIN запросов)
-  category?: VitaminCategory; // Основная категория
-  categories?: ProductCategory[]; // Все категории товара
+  category?: VitaminCategory; 
+  categories?: ProductCategory[]; 
 }
 
 export interface RuleProduct {
@@ -51,7 +48,6 @@ export interface ProductCategory {
   isPrimary: boolean;
   createdAt: Date;
   
-  // Связанные данные
   category?: VitaminCategory;
 }
 
@@ -66,7 +62,7 @@ export interface ProductRecommendation {
   reason: string;
 }
 
-// Ограничения для товаров (противопоказания)
+
 export enum ProductRestriction {
   PREGNANCY = 'pregnancy',
   LACTATION = 'lactation', 
@@ -85,7 +81,7 @@ export enum ProductRestriction {
   NONE = 'none'
 }
 
-// Проблемы, которые решает товар
+
 export enum ProductComplaint {
   FATIGUE = 'fatigue',
   STRESS = 'stress', 
@@ -97,7 +93,6 @@ export enum ProductComplaint {
   MEMORY_ISSUES = 'memory_issues'
 }
 
-// Цели, которые помогает достичь товар
 export enum ProductGoal {
   ENERGY = 'energy',
   IMMUNITY = 'immunity',
@@ -109,7 +104,6 @@ export enum ProductGoal {
   HEART_HEALTH = 'heart_health'
 }
 
-// Типы витаминов/добавок
 export enum ProductVitaminType {
   VITAMIN_D = 'vitamin_d',
   MAGNESIUM = 'magnesium',
@@ -126,7 +120,6 @@ export enum ProductVitaminType {
   MULTIVITAMIN = 'multivitamin'
 }
 
-// Обратная совместимость с существующими типами
 export type Restriction = ProductRestriction;
 export type Complaint = ProductComplaint;
 export type Goal = ProductGoal;
@@ -142,7 +135,6 @@ export interface CreateProductDto {
   quantity: number;
   categoryId?: string;
   
-  // Ограничения и атрибуты
   restrictions?: ProductRestriction[];
   targetComplaints?: ProductComplaint[];
   targetGoals?: ProductGoal[];
@@ -163,7 +155,6 @@ export interface UpdateProductDto {
   quantity?: number;
   categoryId?: string;
   
-  // Ограничения и атрибуты
   restrictions?: ProductRestriction[];
   targetComplaints?: ProductComplaint[];
   targetGoals?: ProductGoal[];

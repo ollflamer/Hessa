@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, MaxLength, Matches, IsNotEmpty, IsBoolean } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength, Matches, IsNotEmpty, IsBoolean, IsOptional } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class RegisterUserDto {
@@ -32,6 +32,14 @@ export class RegisterUserDto {
     return Boolean(value);
   })
   agreeToTerms!: boolean;
+
+  @IsOptional()
+  @IsString({ message: 'Реферальный код должен быть строкой' })
+  @MinLength(6, { message: 'Реферальный код должен содержать минимум 6 символов' })
+  @MaxLength(20, { message: 'Реферальный код не должен превышать 20 символов' })
+  @Matches(/^[A-Z0-9]+$/, { message: 'Реферальный код может содержать только заглавные буквы и цифры' })
+  @Transform(({ value }) => value?.toUpperCase().trim())
+  referralCode?: string;
 }
 
 export class LoginUserDto {

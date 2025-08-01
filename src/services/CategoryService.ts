@@ -85,7 +85,6 @@ export class CategoryService extends BaseService {
 
   async delete(id: string): Promise<boolean> {
     return this.executeWithLogging('удаление категории', async () => {
-      // Проверяем, есть ли товары в этой категории
       const productsCount = await this.dbService.query(
         'SELECT COUNT(*) as count FROM products WHERE category_id = $1',
         [id]

@@ -48,6 +48,21 @@ export class DatabaseService extends BaseService {
     return await this.pool.connect();
   }
 
+  async executeTransaction<T>(fn: () => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await fn();
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async testConnection(): Promise<boolean> {
     try {
       const result = await this.query('SELECT NOW() as current_time');

@@ -12,7 +12,6 @@ export class ProductService extends BaseService {
 
   async create(data: CreateProductDto): Promise<Product> {
     return this.executeWithLogging('создание товара', async () => {
-      // Проверяем уникальность SKU
       const existingSku = await this.dbService.query(
         'SELECT id FROM products WHERE sku = $1',
         [data.sku]
@@ -62,7 +61,6 @@ export class ProductService extends BaseService {
 
       const products = result.map(row => this.mapToProductWithCategory(row));
       
-      // Добавляем все категории для каждого товара
       for (const product of products) {
         product.categories = await this.getProductCategories(product.id);
       }
@@ -120,7 +118,6 @@ export class ProductService extends BaseService {
 
   async update(id: string, data: UpdateProductDto): Promise<Product | null> {
     return this.executeWithLogging('обновление товара', async () => {
-      // Проверяем уникальность SKU если он изменяется
       if (data.sku) {
         const existingSku = await this.dbService.query(
           'SELECT id FROM products WHERE sku = $1 AND id != $2',
@@ -184,7 +181,6 @@ export class ProductService extends BaseService {
 
   async delete(id: string): Promise<boolean> {
     return this.executeWithLogging('удаление товара', async () => {
-      // Мягкое удаление - помечаем как неактивный
       const result = await this.dbService.query(
         'UPDATE products SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
         [id]
@@ -196,13 +192,10 @@ export class ProductService extends BaseService {
 
   async hardDelete(id: string): Promise<boolean> {
     return this.executeWithLogging('жесткое удаление товара', async () => {
-      // Сначала удаляем связи с правилами
       await this.dbService.query(
         'DELETE FROM rule_products WHERE product_id = $1',
         [id]
       );
-
-      // Затем удаляем сам товар
       const result = await this.dbService.query(
         'DELETE FROM products WHERE id = $1',
         [id]
@@ -345,28 +338,68 @@ export class ProductService extends BaseService {
 
   async getProductsByMultipleCategories(categoryIds: string[], includeInactive = false): Promise<Product[]> {
     return this.executeWithLogging('получение товаров по нескольким категориям', async () => {
-      const whereClause = includeInactive 
-        ? 'WHERE pc.category_id = ANY($1)'
-        : 'WHERE pc.category_id = ANY($1) AND p.is_active = true';
-
-      const result = await this.dbService.query(
-        `SELECT DISTINCT p.*, c.name as category_name, c.description as category_description
-         FROM products p
-         JOIN product_categories pc ON p.id = pc.product_id
-         LEFT JOIN vitamin_categories c ON p.category_id = c.id
-         ${whereClause}
-         ORDER BY p.name ASC`,
-        [categoryIds]
-      );
-
-      const products = result.map(row => this.mapToProductWithCategory(row));
-      
-      // Добавляем все категории для каждого товара
-      for (const product of products) {
-        product.categories = await this.getProductCategories(product.id);
+      if (!categoryIds.length) {
+        return [];
       }
+
+      const placeholders = categoryIds.map((_, index) => `$${index + 1}`).join(',');
+      let sql = `
+        SELECT DISTINCT p.*, vc.name as category_name, vc.description as category_description
+        FROM products p
+        INNER JOIN product_categories pc ON p.id = pc.product_id
+        INNER JOIN vitamin_categories vc ON pc.category_id = vc.id
+        WHERE pc.category_id IN (${placeholders})
+      `;
+
+      if (!includeInactive) {
+        sql += ` AND p.is_active = true`;
+      }
+
+      sql += ` ORDER BY p.name ASC`;
+
+      const result = await this.dbService.query(sql, categoryIds);
+      return result.map(row => this.mapToProductWithCategory(row));
+    });
+  }
+
+  async addProductToVitaminRule(productId: string, ruleId: string): Promise<void> {
+    return this.executeWithLogging('привязка товара к правилу опросника', async () => {
+      await this.dbService.query(
+        `INSERT INTO product_vitamin_rules (product_id, rule_id) 
+         VALUES ($1, $2) 
+         ON CONFLICT (product_id, rule_id) DO NOTHING`,
+        [productId, ruleId]
+      );
+    });
+  }
+
+  async removeProductFromVitaminRule(productId: string, ruleId: string): Promise<void> {
+    return this.executeWithLogging('отвязка товара от правила опросника', async () => {
+      await this.dbService.query(
+        `DELETE FROM product_vitamin_rules 
+         WHERE product_id = $1 AND rule_id = $2`,
+        [productId, ruleId]
+      );
+    });
+  }
+
+  async getProductVitaminRules(productId: string): Promise<any[]> {
+    return this.executeWithLogging('получение правил опросника для товара', async () => {
+      const result = await this.dbService.query(
+        `SELECT vr.id, vr.name, vr.condition, vr.priority
+         FROM vitamin_rules vr
+         INNER JOIN product_vitamin_rules pvr ON vr.id = pvr.rule_id
+         WHERE pvr.product_id = $1
+         ORDER BY vr.priority ASC`,
+        [productId]
+      );
       
-      return products;
+      return result.map(row => ({
+        id: row.id,
+        name: row.name,
+        condition: row.condition,
+        priority: row.priority
+      }));
     });
   }
 }

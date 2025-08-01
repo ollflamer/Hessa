@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { databaseService } from './DatabaseService';
 import { BaseService } from './BaseService';
+import { ReferralService } from './ReferralService';
 import { User } from '../models/User';
 import { appConfig } from '../config/app';
 
@@ -9,6 +10,7 @@ interface CreateUserData {
   email: string;
   name: string;
   password: string;
+  referralCode?: string;
 }
 
 interface LoginData {
@@ -17,9 +19,16 @@ interface LoginData {
 }
 
 export class UserService extends BaseService {
+  private referralService: ReferralService;
+
+  constructor() {
+    super();
+    this.referralService = new ReferralService(databaseService);
+  }
+
   async createUser(userData: CreateUserData): Promise<User> {
     return this.executeWithLogging('создание пользователя', async () => {
-      const { email, name, password } = userData;
+      const { email, name, password, referralCode } = userData;
       
       const existingUser = await this.findByEmail(email);
       if (existingUser) {
@@ -28,14 +37,26 @@ export class UserService extends BaseService {
 
       const passwordHash = await bcrypt.hash(password, 12);
       
-      const result = await databaseService.query<any>(
-        `INSERT INTO users (email, name, password_hash, role) 
-         VALUES ($1, $2, $3, 'user') 
-         RETURNING id, email, name, role, created_at, updated_at`,
-        [email, name, passwordHash]
-      );
+      return await databaseService.executeTransaction(async () => {
+        const result = await databaseService.query<any>(
+          `INSERT INTO users (email, name, password_hash, role) 
+           VALUES ($1, $2, $3, 'user') 
+           RETURNING id, email, name, role, created_at, updated_at`,
+          [email, name, passwordHash]
+        );
 
-      return User.fromObject(result[0]);
+        const newUser = User.fromObject(result[0]);
+
+        if (referralCode) {
+          try {
+            await this.referralService.createReferralConnection(referralCode, newUser.id);
+          } catch (error) {
+            console.warn('Ошибка при обработке реферального кода:', error);
+          }
+        }
+
+        return newUser;
+      });
     });
   }
 

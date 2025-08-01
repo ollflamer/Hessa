@@ -45,7 +45,6 @@ export class UserController extends BaseController {
         return this.handleError(res, 'Email, имя и пароль обязательны', 400);
       }
 
-      // Проверяем согласие с офертой
       if (!agreeToTerms) {
         return this.handleError(res, 'Необходимо согласиться с офертой', 400);
       }
@@ -89,19 +88,15 @@ export class UserController extends BaseController {
       try {
         const result = await userService.login({ email, password });
         
-        // Записываем успешную попытку
         if (bruteForce) {
           bruteForce.recordSuccess();
         }
         
         this.handleSuccess(res, result, 'Авторизация успешна');
       } catch (error) {
-        // Записываем неудачную попытку
         if (bruteForce) {
           bruteForce.recordFailure();
         }
-        
-        // Не раскрываем детали ошибки для безопасности
         this.handleError(res, 'Неверный email или пароль', 401);
       }
     });

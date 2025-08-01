@@ -5,7 +5,6 @@ import { plainToClass } from 'class-transformer';
 import { sendError } from '../utils/response';
 import { logger } from '../utils/logger';
 
-// Middleware для express-validator
 export const validationMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

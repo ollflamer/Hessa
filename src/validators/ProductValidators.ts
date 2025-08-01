@@ -198,13 +198,52 @@ export class ProductValidators {
     query('q')
       .notEmpty()
       .withMessage('Поисковый запрос обязателен')
-      .isLength({ min: 2, max: 100 })
-      .withMessage('Поисковый запрос должен быть от 2 до 100 символов'),
-
+      .isLength({ min: 2 })
+      .withMessage('Поисковый запрос должен содержать минимум 2 символа'),
     query('categoryId')
       .optional()
       .isUUID()
       .withMessage('Некорректный ID категории')
+  ];
+
+  static addToCategory = [
+    param('id')
+      .isUUID()
+      .withMessage('Некорректный ID товара'),
+    body('categoryId')
+      .isUUID()
+      .withMessage('Некорректный ID категории'),
+    body('isPrimary')
+      .optional()
+      .isBoolean()
+      .withMessage('Поле isPrimary должно быть булевым значением')
+  ];
+
+  static removeFromCategory = [
+    param('id')
+      .isUUID()
+      .withMessage('Некорректный ID товара'),
+    param('categoryId')
+      .isUUID()
+      .withMessage('Некорректный ID категории')
+  ];
+
+  static addToVitaminRule = [
+    param('id')
+      .isUUID()
+      .withMessage('Некорректный ID товара'),
+    body('ruleId')
+      .isUUID()
+      .withMessage('Некорректный ID правила')
+  ];
+
+  static removeFromVitaminRule = [
+    param('id')
+      .isUUID()
+      .withMessage('Некорректный ID товара'),
+    param('ruleId')
+      .isUUID()
+      .withMessage('Некорректный ID правила')
   ];
 
   static updateQuantity = [

@@ -59,23 +59,18 @@ export class TestUtils {
     }
   }
 
-  static async createTestUser(): Promise<{ user: any; token: string }> {
-    const timestamp = Date.now();
-    const randomId = Math.random().toString(36).substring(7);
-    const userData = {
-      email: `test-${timestamp}-${randomId}@example.com`,
-      password: 'password123',
-      name: 'Тестовый Пользователь'
-    };
-
+  static async createTestUser(userData: {
+    email: string;
+    name: string;
+    password: string;
+    role?: string;
+  }): Promise<any> {
     if (!this.userService) {
       this.userService = new UserService();
     }
 
-    const user = await this.userService.createUser(userData);
-    const token = this.generateTestToken(user.id, 'user');
-
-    return { user, token };
+    return await this.userService.createUser({
+      email: userData.email,
       name: userData.name,
       password: userData.password
     });
